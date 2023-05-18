@@ -234,6 +234,7 @@ def create_driver_with_proxy():
     # Tạo tùy chọn của trình duyệt Chrome với proxy ngẫu nhiên đã chọn
     chrome_options = Options()
     chrome_options.headless = True
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument(f'--proxy-server={proxy_ip}:{proxy_port}')
 
     # Khởi tạo trình điều khiển Chrome với tùy chọn đã cấu hình
@@ -295,9 +296,9 @@ except FileNotFoundError:
     pass
 start_time = time.time()
 # Số lượng thread muốn chạy
-num_threads = 5
+num_threads = 10
 # ID bắt đầu
-start_id = 1000000
+start_id = 0
 # ID kết thúc
 end_id = 2000000
 
