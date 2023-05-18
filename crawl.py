@@ -233,6 +233,7 @@ def create_driver_with_proxy():
 
     # Tạo tùy chọn của trình duyệt Chrome với proxy ngẫu nhiên đã chọn
     chrome_options = Options()
+    chrome_options.headless = True
     chrome_options.add_argument(f'--proxy-server={proxy_ip}:{proxy_port}')
 
     # Khởi tạo trình điều khiển Chrome với tùy chọn đã cấu hình
@@ -244,12 +245,15 @@ def run_selenium_task(start_id, end_id):
     driver = create_driver_with_proxy()
     number_id = 0
     for id in range(start_id, end_id + 1):
-        if id % 10 == 0: 
-            driver.quit()
-            driver = create_driver_with_proxy()
         # Kiểm tra ID đã hoàn thành hay chưa
         if id not in completed_ids:
             driver.get(f'https://duckduckgo.com/?q={id}+inurl%3Abonbanh.com')
+            try:
+                driver.find_element(By.CLASS_NAME, 'wLL07_0Xnd1QZpzpfR4W')
+            except:
+                driver.quit()
+                driver = create_driver_with_proxy()
+                driver.get(f'https://duckduckgo.com/?q={id}+inurl%3Abonbanh.com')
             tags = driver.find_elements(By.CLASS_NAME, 'wLL07_0Xnd1QZpzpfR4W')
             # //*[@id="r1-1"]/div[1]/div/a
             for tag in tags[:5]:
@@ -261,7 +265,7 @@ def run_selenium_task(start_id, end_id):
                     print(link)
                     with open("bonbanh.txt", "a+") as f:
                         f.write(link + "\n")
-                    with open(f'bonbanh_data.csv', 'a', encoding='utf-8') as f_object:
+                    with open(f'run_4100000_4400000.csv', 'a', encoding='utf-8') as f_object:
                         try:
                             post_dict = get_info_single_page(link)
                             df.append(post_dict)
@@ -283,6 +287,7 @@ def run_selenium_task(start_id, end_id):
     dataframe.to_csv(f"{start_id}_{end_id}.csv", encoding='utf-8')
 
 completed_ids = []
+
 try:
     with open("completed_ids.txt", "r") as file:
         completed_ids = [int(line.strip()) for line in file.readlines()]
@@ -292,9 +297,9 @@ start_time = time.time()
 # Số lượng thread muốn chạy
 num_threads = 5
 # ID bắt đầu
-start_id = 3500000
+start_id = 1000000
 # ID kết thúc
-end_id = 4000000
+end_id = 2000000
 
 # Số lượng ID trong mỗi thread
 ids_per_thread = (end_id - start_id + 1) // num_threads
