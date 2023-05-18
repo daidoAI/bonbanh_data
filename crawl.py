@@ -1,3 +1,4 @@
+import json
 from csv import writer
 import time
 import csv
@@ -247,11 +248,17 @@ def create_driver_with_proxy():
     return driver
 dataframe = pd.DataFrame()
 final_df = []
+def create_folder(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+def export_json(id, post_dict):
+    with open(f'{folder_path}/json/{id}.json', 'w+', encoding='utf-8') as f:
+        json.dump(post_dict, f)
+
 def run_selenium_task(i, start_id, end_id):
     # Khởi tạo driver và thực hiện các thao tác cần thiết với ID trong phạm vi
     driver = create_driver_with_proxy()
-    df = []
-    number_id = 0
     for id in range(start_id, end_id + 1):
         # Kiểm tra ID đã hoàn thành hay chưa
         if id not in completed_ids:
@@ -263,42 +270,44 @@ def run_selenium_task(i, start_id, end_id):
                 driver = create_driver_with_proxy()
                 driver.get(f'https://duckduckgo.com/?q={id}+inurl%3Abonbanh.com')
             tags = driver.find_elements(By.CLASS_NAME, 'wLL07_0Xnd1QZpzpfR4W')
-            # //*[@id="r1-1"]/div[1]/div/a
+
             for tag in tags[:5]:
                 # print(tag)
                 link = tag.find_element(By.CLASS_NAME, 'Rn_JXVtoPVAFyGkcaXyK')
                 link = (link.get_attribute("href"))
                 if link.startswith("https://bonbanh.com/xe-"):
                     print(link)
-                    with open("bonbanh.txt", "a+") as f:
+                    with open(f"{folder_path}/link_bonbanh.txt", "a+") as f:
                         f.write(link + "\n")
                     post_dict = get_info_single_page(link)
-                    df.append(post_dict)
+                    export_json(id, post_dict)
+                    # with open(f'{folder_path}/json/{id}.json', 'w+') as f:
+                    #     json.dump(post_dict, f)
                     final_df.append(post_dict)
-                    dataframe = pd.DataFrame(df)
-                    dataframe.to_csv(f"DATA_{start_id}_{end_id}_{i}.csv", encoding='utf-8')
                 else:
-                    with open("id_failed.txt", "a+") as f:
+                    with open(f"{folder_path}/id_failed.txt", "a+") as f:
                         f.write(str(id) + "\n")         
+            
             completed_ids.append(id)
-            with open("completed_ids.txt", "a+") as file:
+            with open(f"{folder_path}/completed_ids.txt", "a+") as file:
                 file.write(str(id) + "\n")
-    
 
 completed_ids = []
+folder_path = "/data/"
 
 try:
-    with open("completed_ids.txt", "r") as file:
+    with open(f"{folder_path}/completed_ids.txt", "r") as file:
         completed_ids = [int(line.strip()) for line in file.readlines()]
 except FileNotFoundError:
     pass
+create_folder(folder_path)
 start_time = time.time()
 # Số lượng thread muốn chạy
 num_threads = 3
 # ID bắt đầu
-start_id = 4100000
+start_id = 4600000
 # ID kết thúc
-end_id = 4100060
+end_id = 4600020
 
 # Số lượng ID trong mỗi thread
 ids_per_thread = (end_id - start_id + 1) // num_threads
@@ -312,6 +321,5 @@ with ThreadPoolExecutor(max_workers=num_threads) as executor:
         end = start + ids_per_thread - 1
         # Chạy công việc trên mỗi thread
         executor.submit(run_selenium_task,i, start, end)
-
 final_dataframe = pd.DataFrame(final_df)
-final_dataframe.to_csv(f"{start_id}_{end_id}.csv", encoding='utf-8')
+final_dataframe.to_csv(f"{folder_path}/{start_id}_{end_id}.csv")
