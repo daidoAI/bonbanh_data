@@ -233,17 +233,24 @@ def create_driver_with_proxy():
 
     # Tạo tùy chọn của trình duyệt Chrome với proxy ngẫu nhiên đã chọn
     chrome_options = Options()
-    chrome_options.headless = True
-    chrome_options.add_argument("--headless")
+    chrome_options.headless = False
+    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_prefs = {}
+    chrome_options.experimental_options["prefs"] = chrome_prefs
+    chrome_prefs["profile.default_content_settings"] = {"images": 2}
     chrome_options.add_argument(f'--proxy-server={proxy_ip}:{proxy_port}')
 
     # Khởi tạo trình điều khiển Chrome với tùy chọn đã cấu hình
     driver = webdriver.Chrome(PATH, options=chrome_options)
     return driver
-
-def run_selenium_task(start_id, end_id):
+dataframe = pd.DataFrame()
+final_df = []
+def run_selenium_task(i, start_id, end_id):
     # Khởi tạo driver và thực hiện các thao tác cần thiết với ID trong phạm vi
     driver = create_driver_with_proxy()
+    df = []
     number_id = 0
     for id in range(start_id, end_id + 1):
         # Kiểm tra ID đã hoàn thành hay chưa
@@ -261,31 +268,22 @@ def run_selenium_task(start_id, end_id):
                 # print(tag)
                 link = tag.find_element(By.CLASS_NAME, 'Rn_JXVtoPVAFyGkcaXyK')
                 link = (link.get_attribute("href"))
-                # print(link)
                 if link.startswith("https://bonbanh.com/xe-"):
                     print(link)
                     with open("bonbanh.txt", "a+") as f:
                         f.write(link + "\n")
-                    with open(f'run_4100000_4400000.csv', 'a', encoding='utf-8') as f_object:
-                        try:
-                            post_dict = get_info_single_page(link)
-                            df.append(post_dict)
-                            writer_object = csv.writer(f_object)
-                            writer_object.writerow(post_dict.values())
-                            with open("id_done.txt", "a+") as f:
-                                f.write(str(id) + "\n") 
-                        except:
-                            with open("bonbanh_error.txt", "a+") as f:
-                                f.write(link + "\n")
-                            continue
+                    post_dict = get_info_single_page(link)
+                    df.append(post_dict)
+                    final_df.append(post_dict)
+                    dataframe = pd.DataFrame(df)
+                    dataframe.to_csv(f"DATA_{start_id}_{end_id}_{i}.csv", encoding='utf-8')
                 else:
                     with open("id_failed.txt", "a+") as f:
                         f.write(str(id) + "\n")         
             completed_ids.append(id)
             with open("completed_ids.txt", "a+") as file:
                 file.write(str(id) + "\n")
-    dataframe = pd.DataFrame(df)
-    dataframe.to_csv(f"{start_id}_{end_id}.csv", encoding='utf-8')
+    
 
 completed_ids = []
 
@@ -296,11 +294,11 @@ except FileNotFoundError:
     pass
 start_time = time.time()
 # Số lượng thread muốn chạy
-num_threads = 10
+num_threads = 3
 # ID bắt đầu
-start_id = 0
+start_id = 4100000
 # ID kết thúc
-end_id = 2000000
+end_id = 4100060
 
 # Số lượng ID trong mỗi thread
 ids_per_thread = (end_id - start_id + 1) // num_threads
@@ -313,5 +311,7 @@ with ThreadPoolExecutor(max_workers=num_threads) as executor:
         start = start_id + i * ids_per_thread
         end = start + ids_per_thread - 1
         # Chạy công việc trên mỗi thread
-        executor.submit(run_selenium_task, start, end)
+        executor.submit(run_selenium_task,i, start, end)
 
+final_dataframe = pd.DataFrame(final_df)
+final_dataframe.to_csv(f"{start_id}_{end_id}.csv", encoding='utf-8')
