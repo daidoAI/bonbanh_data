@@ -1,0 +1,5 @@
+chromedriver-autoinstaller
+bs4
+pandas
+webdriver-manager
+selenium
